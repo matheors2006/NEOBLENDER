@@ -4,14 +4,14 @@ export type ToolId = 'select' | 'translate' | 'rotate' | 'scale'
 
 interface EditorState {
   activeTool: ToolId
-  selectedNodeId: string | null
+  selectedMesh: string | null
   setActiveTool: (tool: ToolId) => void
-  setSelectedNodeId: (nodeId: string | null) => void
+  setSelectedMesh: (meshId: string | null) => void
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
   activeTool: 'select',
-  selectedNodeId: null,
+  selectedMesh: null,
   setActiveTool: (tool) => set({ activeTool: tool }),
-  setSelectedNodeId: (nodeId) => set({ selectedNodeId: nodeId }),
+  setSelectedMesh: (meshId) => set({ selectedMesh: meshId }),
 }))
