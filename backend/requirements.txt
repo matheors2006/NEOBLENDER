@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+websockets
+trimesh
+sqlalchemy
+psycopg2-binary
+pydantic-settings
+python-dotenv
