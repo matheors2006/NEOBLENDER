@@ -3,8 +3,8 @@ import { create } from 'zustand'
 export type ToolId = 'select' | 'translate' | 'rotate' | 'scale'
 
 export interface RingGeometry {
-  vertices: number[]
-  faces: number[]
+  vertices: number[][]
+  faces: number[][]
 }
 
 interface EditorState {
