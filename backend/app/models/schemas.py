@@ -24,3 +24,9 @@ class MeshData(BaseModel):
 class GeometryResponseSpec(BaseModel):
     ring: MeshData
     gemstone: MeshData | None = None
+
+
+class BooleanOperationSpec(BaseModel):
+    action: Literal["boolean_difference"]
+    target_mesh: MeshData
+    tool_mesh: MeshData
