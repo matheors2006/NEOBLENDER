@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useEditorStore, type RingGeometry } from '../store/useEditorStore'
 
 const WS_URL = 'ws://localhost:8000/ws/editor'
@@ -11,10 +11,19 @@ interface EditorSocketMessage {
 export function useEditorWebSocket() {
   const socketRef = useRef<WebSocket | null>(null)
   const setRingGeometry = useEditorStore((state) => state.setRingGeometry)
+  const [isConnected, setIsConnected] = useState(false)
 
   useEffect(() => {
     const socket = new WebSocket(WS_URL)
     socketRef.current = socket
+
+    socket.onopen = () => {
+      setIsConnected(true)
+    }
+
+    socket.onclose = () => {
+      setIsConnected(false)
+    }
 
     socket.onmessage = (event) => {
       const data: EditorSocketMessage = JSON.parse(event.data)
@@ -43,5 +52,5 @@ export function useEditorWebSocket() {
     )
   }, [])
 
-  return { requestRing }
+  return { requestRing, isConnected }
 }

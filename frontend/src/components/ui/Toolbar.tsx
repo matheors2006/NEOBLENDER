@@ -19,15 +19,17 @@ export function Toolbar() {
   const ringThickness = useEditorStore((state) => state.ringThickness)
   const setRingRadius = useEditorStore((state) => state.setRingRadius)
   const setRingThickness = useEditorStore((state) => state.setRingThickness)
-  const { requestRing } = useEditorWebSocket()
+  const { requestRing, isConnected } = useEditorWebSocket()
 
   useEffect(() => {
+    if (!isConnected) return
+
     const timeout = setTimeout(() => {
       requestRing(ringRadius, ringThickness)
     }, DEBOUNCE_MS)
 
     return () => clearTimeout(timeout)
-  }, [ringRadius, ringThickness, requestRing])
+  }, [ringRadius, ringThickness, isConnected, requestRing])
 
   return (
     <div className="flex items-center gap-4 rounded-lg bg-neutral-900/90 p-3 shadow-lg">
