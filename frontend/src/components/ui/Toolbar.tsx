@@ -1,7 +1,11 @@
 import { useEffect } from 'react'
 import { Move, RotateCw, MousePointer2, Scale } from 'lucide-react'
 import { useEditorWebSocket } from '../../hooks/useEditorWebSocket'
-import { useEditorStore, type ToolId } from '../../store/useEditorStore'
+import {
+  useEditorStore,
+  type EditorMode,
+  type ToolId,
+} from '../../store/useEditorStore'
 import type { ExportRingRequest } from '../../types/api-specs'
 
 const TOOLS: { id: ToolId; label: string; icon: typeof Move }[] = [
@@ -9,6 +13,11 @@ const TOOLS: { id: ToolId; label: string; icon: typeof Move }[] = [
   { id: 'translate', label: 'Translate', icon: Move },
   { id: 'rotate', label: 'Rotate', icon: RotateCw },
   { id: 'scale', label: 'Scale', icon: Scale },
+]
+
+const MODES: { id: EditorMode; label: string }[] = [
+  { id: 'parametric', label: 'Parametric Mode' },
+  { id: 'sculpt', label: 'Sculpt Mode' },
 ]
 
 const DEBOUNCE_MS = 100
@@ -24,6 +33,8 @@ export function Toolbar() {
   const gemstoneSize = useEditorStore((state) => state.gemstoneSize)
   const setHasGemstone = useEditorStore((state) => state.setHasGemstone)
   const setGemstoneSize = useEditorStore((state) => state.setGemstoneSize)
+  const editorMode = useEditorStore((state) => state.editorMode)
+  const setEditorMode = useEditorStore((state) => state.setEditorMode)
   const { requestRing, isConnected } = useEditorWebSocket()
 
   useEffect(() => {
@@ -61,6 +72,25 @@ export function Toolbar() {
 
   return (
     <div className="flex items-center gap-4 rounded-lg bg-neutral-900/90 p-3 shadow-lg">
+      <div className="flex gap-1 rounded-md bg-neutral-800 p-1">
+        {MODES.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setEditorMode(id)}
+            className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
+              editorMode === id
+                ? 'bg-amber-500 text-neutral-950'
+                : 'text-neutral-300 hover:bg-neutral-700'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="h-8 w-px bg-neutral-700" />
+
       <div className="flex gap-1">
         {TOOLS.map(({ id, label, icon: Icon }) => (
           <button
@@ -79,81 +109,85 @@ export function Toolbar() {
         ))}
       </div>
 
-      <div className="h-8 w-px bg-neutral-700" />
+      {editorMode === 'parametric' && (
+        <>
+          <div className="h-8 w-px bg-neutral-700" />
 
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-3 text-xs text-neutral-300">
-          <label htmlFor="ring-radius">Radius</label>
-          <span className="tabular-nums text-neutral-400">
-            {ringRadius.toFixed(1)}
-          </span>
-        </div>
-        <input
-          id="ring-radius"
-          type="range"
-          min={5}
-          max={20}
-          step={0.5}
-          value={ringRadius}
-          onChange={(event) => setRingRadius(Number(event.target.value))}
-          className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500"
-        />
-      </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-3 text-xs text-neutral-300">
+              <label htmlFor="ring-radius">Radius</label>
+              <span className="tabular-nums text-neutral-400">
+                {ringRadius.toFixed(1)}
+              </span>
+            </div>
+            <input
+              id="ring-radius"
+              type="range"
+              min={5}
+              max={20}
+              step={0.5}
+              value={ringRadius}
+              onChange={(event) => setRingRadius(Number(event.target.value))}
+              className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500"
+            />
+          </div>
 
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-3 text-xs text-neutral-300">
-          <label htmlFor="ring-thickness">Thickness</label>
-          <span className="tabular-nums text-neutral-400">
-            {ringThickness.toFixed(1)}
-          </span>
-        </div>
-        <input
-          id="ring-thickness"
-          type="range"
-          min={0.5}
-          max={5}
-          step={0.1}
-          value={ringThickness}
-          onChange={(event) => setRingThickness(Number(event.target.value))}
-          className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500"
-        />
-      </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-3 text-xs text-neutral-300">
+              <label htmlFor="ring-thickness">Thickness</label>
+              <span className="tabular-nums text-neutral-400">
+                {ringThickness.toFixed(1)}
+              </span>
+            </div>
+            <input
+              id="ring-thickness"
+              type="range"
+              min={0.5}
+              max={5}
+              step={0.1}
+              value={ringThickness}
+              onChange={(event) => setRingThickness(Number(event.target.value))}
+              className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500"
+            />
+          </div>
 
-      <div className="h-8 w-px bg-neutral-700" />
+          <div className="h-8 w-px bg-neutral-700" />
 
-      <label
-        htmlFor="has-gemstone"
-        className="flex items-center gap-2 text-xs text-neutral-300"
-      >
-        <input
-          id="has-gemstone"
-          type="checkbox"
-          checked={hasGemstone}
-          onChange={(event) => setHasGemstone(event.target.checked)}
-          className="h-4 w-4 cursor-pointer accent-amber-500"
-        />
-        Gemstone
-      </label>
+          <label
+            htmlFor="has-gemstone"
+            className="flex items-center gap-2 text-xs text-neutral-300"
+          >
+            <input
+              id="has-gemstone"
+              type="checkbox"
+              checked={hasGemstone}
+              onChange={(event) => setHasGemstone(event.target.checked)}
+              className="h-4 w-4 cursor-pointer accent-amber-500"
+            />
+            Gemstone
+          </label>
 
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-3 text-xs text-neutral-300">
-          <label htmlFor="gemstone-size">Size</label>
-          <span className="tabular-nums text-neutral-400">
-            {gemstoneSize.toFixed(1)}
-          </span>
-        </div>
-        <input
-          id="gemstone-size"
-          type="range"
-          min={0.5}
-          max={5}
-          step={0.1}
-          value={gemstoneSize}
-          disabled={!hasGemstone}
-          onChange={(event) => setGemstoneSize(Number(event.target.value))}
-          className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
-        />
-      </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-3 text-xs text-neutral-300">
+              <label htmlFor="gemstone-size">Size</label>
+              <span className="tabular-nums text-neutral-400">
+                {gemstoneSize.toFixed(1)}
+              </span>
+            </div>
+            <input
+              id="gemstone-size"
+              type="range"
+              min={0.5}
+              max={5}
+              step={0.1}
+              value={gemstoneSize}
+              disabled={!hasGemstone}
+              onChange={(event) => setGemstoneSize(Number(event.target.value))}
+              className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
+            />
+          </div>
+        </>
+      )}
 
       <div className="h-8 w-px bg-neutral-700" />
 
