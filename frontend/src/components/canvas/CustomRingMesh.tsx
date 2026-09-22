@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import * as THREE from 'three'
 import { useEditorStore } from '../../store/useEditorStore'
 import type { GeometryData } from '../../types/api-specs'
+import { SculptableMesh } from './SculptableMesh'
 
 function buildBufferGeometry(data: GeometryData): THREE.BufferGeometry {
   const positions = new Float32Array(data.vertices.flat())
@@ -21,24 +22,31 @@ function buildBufferGeometry(data: GeometryData): THREE.BufferGeometry {
 
 export function CustomRingMesh() {
   const ringGeometry = useEditorStore((state) => state.ringGeometry)
+  const editorMode = useEditorStore((state) => state.editorMode)
 
   const bandGeometry = useMemo(() => {
-    if (!ringGeometry) return null
+    if (!ringGeometry || editorMode === 'sculpt') return null
     return buildBufferGeometry(ringGeometry.ring)
-  }, [ringGeometry])
+  }, [ringGeometry, editorMode])
 
   const gemstoneGeometry = useMemo(() => {
     if (!ringGeometry?.gemstone) return null
     return buildBufferGeometry(ringGeometry.gemstone)
   }, [ringGeometry])
 
-  if (!bandGeometry) return null
+  if (!ringGeometry) return null
 
   return (
     <group>
-      <mesh geometry={bandGeometry}>
-        <meshStandardMaterial color="gold" metalness={1} roughness={0.2} />
-      </mesh>
+      {editorMode === 'sculpt' ? (
+        <SculptableMesh geometryData={ringGeometry.ring} />
+      ) : (
+        bandGeometry && (
+          <mesh geometry={bandGeometry}>
+            <meshStandardMaterial color="gold" metalness={1} roughness={0.2} />
+          </mesh>
+        )
+      )}
       {gemstoneGeometry && (
         <mesh geometry={gemstoneGeometry}>
           <meshPhysicalMaterial
