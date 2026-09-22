@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Move, RotateCw, MousePointer2, Scale } from 'lucide-react'
 import { useEditorWebSocket } from '../../hooks/useEditorWebSocket'
 import { useEditorStore, type ToolId } from '../../store/useEditorStore'
@@ -9,13 +10,27 @@ const TOOLS: { id: ToolId; label: string; icon: typeof Move }[] = [
   { id: 'scale', label: 'Scale', icon: Scale },
 ]
 
+const DEBOUNCE_MS = 100
+
 export function Toolbar() {
   const activeTool = useEditorStore((state) => state.activeTool)
   const setActiveTool = useEditorStore((state) => state.setActiveTool)
+  const ringRadius = useEditorStore((state) => state.ringRadius)
+  const ringThickness = useEditorStore((state) => state.ringThickness)
+  const setRingRadius = useEditorStore((state) => state.setRingRadius)
+  const setRingThickness = useEditorStore((state) => state.setRingThickness)
   const { requestRing } = useEditorWebSocket()
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      requestRing(ringRadius, ringThickness)
+    }, DEBOUNCE_MS)
+
+    return () => clearTimeout(timeout)
+  }, [ringRadius, ringThickness, requestRing])
+
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-neutral-900/90 p-1.5 shadow-lg">
+    <div className="flex items-center gap-4 rounded-lg bg-neutral-900/90 p-3 shadow-lg">
       <div className="flex gap-1">
         {TOOLS.map(({ id, label, icon: Icon }) => (
           <button
@@ -33,13 +48,46 @@ export function Toolbar() {
           </button>
         ))}
       </div>
-      <button
-        type="button"
-        onClick={() => requestRing(10, 2)}
-        className="h-9 rounded-md bg-amber-500 px-3 text-sm font-medium text-neutral-950 transition-colors hover:bg-amber-400"
-      >
-        Generate Ring Model
-      </button>
+
+      <div className="h-8 w-px bg-neutral-700" />
+
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-3 text-xs text-neutral-300">
+          <label htmlFor="ring-radius">Radius</label>
+          <span className="tabular-nums text-neutral-400">
+            {ringRadius.toFixed(1)}
+          </span>
+        </div>
+        <input
+          id="ring-radius"
+          type="range"
+          min={5}
+          max={20}
+          step={0.5}
+          value={ringRadius}
+          onChange={(event) => setRingRadius(Number(event.target.value))}
+          className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-3 text-xs text-neutral-300">
+          <label htmlFor="ring-thickness">Thickness</label>
+          <span className="tabular-nums text-neutral-400">
+            {ringThickness.toFixed(1)}
+          </span>
+        </div>
+        <input
+          id="ring-thickness"
+          type="range"
+          min={0.5}
+          max={5}
+          step={0.1}
+          value={ringThickness}
+          onChange={(event) => setRingThickness(Number(event.target.value))}
+          className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500"
+        />
+      </div>
     </div>
   )
 }
