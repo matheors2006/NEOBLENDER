@@ -10,7 +10,8 @@ router = APIRouter()
 @router.post("/api/export/stl")
 def export_ring_stl(spec: ExportRingSpec):
     mesh_data = generate_base_ring(radius=spec.radius, thickness=spec.thickness)
-    mesh = trimesh.Trimesh(vertices=mesh_data["vertices"], faces=mesh_data["faces"])
+    ring_data = mesh_data["ring"]
+    mesh = trimesh.Trimesh(vertices=ring_data["vertices"], faces=ring_data["faces"])
     stl_bytes = mesh.export(file_type="stl")
 
     return Response(
