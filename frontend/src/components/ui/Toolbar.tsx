@@ -20,17 +20,21 @@ export function Toolbar() {
   const ringThickness = useEditorStore((state) => state.ringThickness)
   const setRingRadius = useEditorStore((state) => state.setRingRadius)
   const setRingThickness = useEditorStore((state) => state.setRingThickness)
+  const hasGemstone = useEditorStore((state) => state.hasGemstone)
+  const gemstoneSize = useEditorStore((state) => state.gemstoneSize)
+  const setHasGemstone = useEditorStore((state) => state.setHasGemstone)
+  const setGemstoneSize = useEditorStore((state) => state.setGemstoneSize)
   const { requestRing, isConnected } = useEditorWebSocket()
 
   useEffect(() => {
     if (!isConnected) return
 
     const timeout = setTimeout(() => {
-      requestRing(ringRadius, ringThickness)
+      requestRing(ringRadius, ringThickness, hasGemstone, gemstoneSize)
     }, DEBOUNCE_MS)
 
     return () => clearTimeout(timeout)
-  }, [ringRadius, ringThickness, isConnected, requestRing])
+  }, [ringRadius, ringThickness, hasGemstone, gemstoneSize, isConnected, requestRing])
 
   const handleExportStl = async () => {
     const payload: ExportRingRequest = {
@@ -112,6 +116,42 @@ export function Toolbar() {
           value={ringThickness}
           onChange={(event) => setRingThickness(Number(event.target.value))}
           className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500"
+        />
+      </div>
+
+      <div className="h-8 w-px bg-neutral-700" />
+
+      <label
+        htmlFor="has-gemstone"
+        className="flex items-center gap-2 text-xs text-neutral-300"
+      >
+        <input
+          id="has-gemstone"
+          type="checkbox"
+          checked={hasGemstone}
+          onChange={(event) => setHasGemstone(event.target.checked)}
+          className="h-4 w-4 cursor-pointer accent-amber-500"
+        />
+        Gemstone
+      </label>
+
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-3 text-xs text-neutral-300">
+          <label htmlFor="gemstone-size">Size</label>
+          <span className="tabular-nums text-neutral-400">
+            {gemstoneSize.toFixed(1)}
+          </span>
+        </div>
+        <input
+          id="gemstone-size"
+          type="range"
+          min={0.5}
+          max={5}
+          step={0.1}
+          value={gemstoneSize}
+          disabled={!hasGemstone}
+          onChange={(event) => setGemstoneSize(Number(event.target.value))}
+          className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
         />
       </div>
 

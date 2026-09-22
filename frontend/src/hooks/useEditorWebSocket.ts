@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useEditorStore, type RingGeometry } from '../store/useEditorStore'
+import { useEditorStore } from '../store/useEditorStore'
+import type { CompositeRingGeometry } from '../types/api-specs'
 
 const WS_URL = 'ws://localhost:8000/ws/editor'
-
-interface EditorSocketMessage {
-  status?: string
-  mesh?: RingGeometry
-}
 
 export function useEditorWebSocket() {
   const socketRef = useRef<WebSocket | null>(null)
@@ -26,10 +22,10 @@ export function useEditorWebSocket() {
     }
 
     socket.onmessage = (event) => {
-      const data: EditorSocketMessage = JSON.parse(event.data)
+      const data = JSON.parse(event.data)
 
-      if (data.status === 'success' && data.mesh) {
-        setRingGeometry(data.mesh)
+      if (data && typeof data === 'object' && 'ring' in data) {
+        setRingGeometry(data as CompositeRingGeometry)
       }
     }
 
@@ -39,18 +35,28 @@ export function useEditorWebSocket() {
     }
   }, [setRingGeometry])
 
-  const requestRing = useCallback((radius: number, thickness: number) => {
-    const socket = socketRef.current
-    if (!socket || socket.readyState !== WebSocket.OPEN) return
+  const requestRing = useCallback(
+    (
+      radius: number,
+      thickness: number,
+      hasGemstone: boolean,
+      gemstoneSize: number,
+    ) => {
+      const socket = socketRef.current
+      if (!socket || socket.readyState !== WebSocket.OPEN) return
 
-    socket.send(
-      JSON.stringify({
-        action: 'create_ring',
-        radius,
-        thickness,
-      }),
-    )
-  }, [])
+      socket.send(
+        JSON.stringify({
+          action: 'create_ring',
+          radius,
+          thickness,
+          has_gemstone: hasGemstone,
+          gemstone_size: gemstoneSize,
+        }),
+      )
+    },
+    [],
+  )
 
   return { requestRing, isConnected }
 }
