@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Move, RotateCw, MousePointer2, Scale } from 'lucide-react'
 import { useEditorWebSocket } from '../../hooks/useEditorWebSocket'
 import { useEditorStore, type ToolId } from '../../store/useEditorStore'
+import type { ExportRingRequest } from '../../types/api-specs'
 
 const TOOLS: { id: ToolId; label: string; icon: typeof Move }[] = [
   { id: 'select', label: 'Select', icon: MousePointer2 },
@@ -30,6 +31,29 @@ export function Toolbar() {
 
     return () => clearTimeout(timeout)
   }, [ringRadius, ringThickness, isConnected, requestRing])
+
+  const handleExportStl = async () => {
+    const payload: ExportRingRequest = {
+      radius: ringRadius,
+      thickness: ringThickness,
+    }
+
+    const response = await fetch('http://localhost:8000/api/export/stl', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'ring.stl'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="flex items-center gap-4 rounded-lg bg-neutral-900/90 p-3 shadow-lg">
@@ -90,6 +114,16 @@ export function Toolbar() {
           className="h-1.5 w-36 cursor-pointer appearance-none rounded-full bg-neutral-700 accent-amber-500"
         />
       </div>
+
+      <div className="h-8 w-px bg-neutral-700" />
+
+      <button
+        type="button"
+        onClick={handleExportStl}
+        className="h-9 rounded-md bg-amber-500 px-3 text-sm font-medium text-neutral-950 transition-colors hover:bg-amber-400"
+      >
+        Export to STL
+      </button>
     </div>
   )
 }
