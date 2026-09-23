@@ -7,30 +7,10 @@ import {
   type EditorMode,
   type ToolId,
 } from '../../store/useEditorStore'
-import type { ExportRingRequest, GeometryData } from '../../types/api-specs'
+import type { ExportRingRequest } from '../../types/api-specs'
+import { createToolGeometry, geometryToData } from '../../utils/toolGeometry'
 
-// A 2mm-diameter drill bit running along Y, centered on the top of the band
-// (y = ring radius) so it passes fully through the tube.
-function buildDrillBitData(ringRadius: number): GeometryData {
-  const geometry = new THREE.CylinderGeometry(1, 1, 20, 16)
-  geometry.translate(0, ringRadius, 0)
-
-  const positions = geometry.attributes.position.array
-  const indices = geometry.index!.array
-
-  const vertices: number[][] = []
-  for (let i = 0; i < positions.length; i += 3) {
-    vertices.push([positions[i], positions[i + 1], positions[i + 2]])
-  }
-
-  const faces: number[][] = []
-  for (let i = 0; i < indices.length; i += 3) {
-    faces.push([indices[i], indices[i + 1], indices[i + 2]])
-  }
-
-  geometry.dispose()
-  return { vertices, faces }
-}
+const IDENTITY_MATRIX = new THREE.Matrix4().identity().toArray()
 
 const TOOLS: { id: ToolId; label: string; icon: typeof Move }[] = [
   { id: 'select', label: 'Select', icon: MousePointer2 },
@@ -60,12 +40,25 @@ export function Toolbar() {
   const editorMode = useEditorStore((state) => state.editorMode)
   const setEditorMode = useEditorStore((state) => state.setEditorMode)
   const ringGeometry = useEditorStore((state) => state.ringGeometry)
+  const toolGizmo = useEditorStore((state) => state.toolGizmo)
+  const setToolGizmo = useEditorStore((state) => state.setToolGizmo)
   const { requestRing, requestBooleanDifference, isConnected } =
     useEditorWebSocket()
 
-  const handleDrillHole = () => {
-    if (!ringGeometry) return
-    requestBooleanDifference(ringGeometry.ring, buildDrillBitData(ringRadius))
+  const handleSpawnDrillBit = () => {
+    setToolGizmo({ type: 'cylinder', matrix: IDENTITY_MATRIX })
+  }
+
+  const handleExecuteCut = () => {
+    if (!ringGeometry || !toolGizmo) return
+
+    const geometry = createToolGeometry(toolGizmo.type)
+    geometry.applyMatrix4(new THREE.Matrix4().fromArray(toolGizmo.matrix))
+    const toolData = geometryToData(geometry)
+    geometry.dispose()
+
+    requestBooleanDifference(ringGeometry.ring, toolData)
+    setToolGizmo(null)
   }
 
   useEffect(() => {
@@ -102,7 +95,7 @@ export function Toolbar() {
   }
 
   return (
-    <div className="flex items-center gap-4 rounded-lg bg-neutral-900/90 p-3 shadow-lg">
+    <div className="flex max-w-[95vw] flex-wrap items-center justify-center gap-4 rounded-lg bg-neutral-900/90 p-3 shadow-lg">
       <div className="flex gap-1 rounded-md bg-neutral-800 p-1">
         {MODES.map(({ id, label }) => (
           <button
@@ -224,14 +217,24 @@ export function Toolbar() {
 
       <div className="flex flex-col gap-1">
         <span className="text-xs text-neutral-400">Tools</span>
-        <button
-          type="button"
-          onClick={handleDrillHole}
-          disabled={!ringGeometry || !isConnected}
-          className="h-7 rounded-md bg-neutral-700 px-3 text-xs font-medium text-neutral-100 transition-colors hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Drill 2mm Hole
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleSpawnDrillBit}
+            disabled={!ringGeometry || toolGizmo !== null}
+            className="h-7 rounded-md bg-neutral-700 px-3 text-xs font-medium text-neutral-100 transition-colors hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Spawn Drill Bit
+          </button>
+          <button
+            type="button"
+            onClick={handleExecuteCut}
+            disabled={!ringGeometry || !toolGizmo || !isConnected}
+            className="h-7 rounded-md bg-red-500 px-3 text-xs font-medium text-white transition-colors hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Execute Cut (Difference)
+          </button>
+        </div>
       </div>
 
       <div className="h-8 w-px bg-neutral-700" />

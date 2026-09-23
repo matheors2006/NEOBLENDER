@@ -2,6 +2,7 @@ import { ContactShadows, Environment, Grid, OrbitControls } from '@react-three/d
 import { Canvas } from '@react-three/fiber'
 import { useEditorStore } from '../../store/useEditorStore'
 import { CustomRingMesh } from './CustomRingMesh'
+import { ToolGizmoMesh } from './ToolGizmoMesh'
 
 export function Scene() {
   const isSculpting = useEditorStore((state) => state.isSculpting)
@@ -12,6 +13,7 @@ export function Scene() {
       <directionalLight position={[15, 25, 15]} intensity={1.2} />
       <Environment preset="studio" />
       <CustomRingMesh />
+      <ToolGizmoMesh />
       <ContactShadows
         position={[0, -2, 0]}
         opacity={0.5}

@@ -3,6 +3,12 @@ import type { CompositeRingGeometry, GeometryData } from '../types/api-specs'
 
 export type ToolId = 'select' | 'translate' | 'rotate' | 'scale'
 export type EditorMode = 'parametric' | 'sculpt'
+export type ToolGizmoType = 'cylinder' | 'sphere'
+
+export interface ToolGizmo {
+  type: ToolGizmoType
+  matrix: number[]
+}
 
 interface EditorState {
   activeTool: ToolId
@@ -14,6 +20,7 @@ interface EditorState {
   gemstoneSize: number
   editorMode: EditorMode
   isSculpting: boolean
+  toolGizmo: ToolGizmo | null
   setActiveTool: (tool: ToolId) => void
   setSelectedMesh: (meshId: string | null) => void
   setRingGeometry: (geometry: CompositeRingGeometry | null) => void
@@ -25,6 +32,8 @@ interface EditorState {
   setIsSculpting: (isSculpting: boolean) => void
   updateRingGeometryVertices: (newVertices: number[]) => void
   updateRingMesh: (ring: GeometryData) => void
+  setToolGizmo: (gizmo: ToolGizmo | null) => void
+  updateToolGizmoMatrix: (matrix: number[]) => void
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -37,6 +46,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   gemstoneSize: 2,
   editorMode: 'parametric',
   isSculpting: false,
+  toolGizmo: null,
   setActiveTool: (tool) => set({ activeTool: tool }),
   setSelectedMesh: (meshId) => set({ selectedMesh: meshId }),
   setRingGeometry: (geometry) => set({ ringGeometry: geometry }),
@@ -76,4 +86,9 @@ export const useEditorStore = create<EditorState>((set) => ({
         gemstone: state.ringGeometry?.gemstone ?? null,
       },
     })),
+  setToolGizmo: (gizmo) => set({ toolGizmo: gizmo }),
+  updateToolGizmoMatrix: (matrix) =>
+    set((state) =>
+      state.toolGizmo ? { toolGizmo: { ...state.toolGizmo, matrix } } : state,
+    ),
 }))
