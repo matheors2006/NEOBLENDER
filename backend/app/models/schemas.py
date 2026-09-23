@@ -27,6 +27,6 @@ class GeometryResponseSpec(BaseModel):
 
 
 class BooleanOperationSpec(BaseModel):
-    action: Literal["boolean_difference"]
+    action: Literal["boolean_difference", "boolean_union"]
     target_mesh: MeshData
     tool_mesh: MeshData
