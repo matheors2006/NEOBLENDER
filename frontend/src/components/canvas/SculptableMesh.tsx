@@ -4,8 +4,8 @@ import * as THREE from 'three'
 import { useEditorStore } from '../../store/useEditorStore'
 import type { GeometryData } from '../../types/api-specs'
 
-const BRUSH_RADIUS = 1.0
-const BRUSH_STRENGTH = 0.1
+const BRUSH_RADIUS = 2.0
+const BRUSH_STRENGTH = 0.5
 
 interface SculptableMeshProps {
   geometryData: GeometryData
@@ -46,9 +46,14 @@ export function SculptableMesh({ geometryData }: SculptableMeshProps) {
     for (let i = 0; i < positionAttr.count; i++) {
       vertex.fromBufferAttribute(positionAttr, i)
 
-      if (vertex.distanceTo(point) <= BRUSH_RADIUS) {
+      const distance = vertex.distanceTo(point)
+
+      // The radius guard is required: squaring makes the falloff positive again
+      // beyond the brush radius.
+      if (distance <= BRUSH_RADIUS) {
+        const weight = Math.max(0, Math.pow(1 - distance / BRUSH_RADIUS, 2))
         normal.fromBufferAttribute(normalAttr, i)
-        vertex.addScaledVector(normal, BRUSH_STRENGTH)
+        vertex.addScaledVector(normal, BRUSH_STRENGTH * weight)
         positionAttr.setXYZ(i, vertex.x, vertex.y, vertex.z)
       }
     }

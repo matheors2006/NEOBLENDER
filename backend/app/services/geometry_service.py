@@ -14,7 +14,12 @@ def generate_base_ring(
     has_gemstone: bool = False,
     gemstone_size: float = 2.0,
 ) -> dict:
-    ring_mesh = trimesh.creation.torus(major_radius=radius, minor_radius=thickness)
+    ring_mesh = trimesh.creation.torus(
+        major_radius=radius,
+        minor_radius=thickness,
+        major_sections=128,
+        minor_sections=64,
+    )
 
     gemstone_data = None
     if has_gemstone:
