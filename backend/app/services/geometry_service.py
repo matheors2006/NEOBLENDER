@@ -29,3 +29,16 @@ def generate_base_ring(
         "ring": _mesh_to_dict(ring_mesh),
         "gemstone": gemstone_data,
     }
+
+
+def perform_boolean_difference(target_data: dict, tool_data: dict) -> dict:
+    target_mesh = trimesh.Trimesh(
+        vertices=target_data["vertices"], faces=target_data["faces"]
+    )
+    tool_mesh = trimesh.Trimesh(
+        vertices=tool_data["vertices"], faces=tool_data["faces"]
+    )
+
+    result_mesh = target_mesh.difference(tool_mesh, engine="manifold")
+
+    return _mesh_to_dict(result_mesh)
