@@ -1,8 +1,11 @@
 import { ContactShadows, Environment, Grid, OrbitControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
+import { useEditorStore } from '../../store/useEditorStore'
 import { CustomRingMesh } from './CustomRingMesh'
 
 export function Scene() {
+  const isSculpting = useEditorStore((state) => state.isSculpting)
+
   return (
     <Canvas camera={{ position: [20, 20, 20], fov: 45 }}>
       <ambientLight intensity={0.6} />
@@ -24,7 +27,7 @@ export function Scene() {
         fadeDistance={100}
         infiniteGrid
       />
-      <OrbitControls makeDefault />
+      <OrbitControls makeDefault enabled={!isSculpting} />
     </Canvas>
   )
 }

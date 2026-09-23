@@ -13,6 +13,7 @@ interface EditorState {
   hasGemstone: boolean
   gemstoneSize: number
   editorMode: EditorMode
+  isSculpting: boolean
   setActiveTool: (tool: ToolId) => void
   setSelectedMesh: (meshId: string | null) => void
   setRingGeometry: (geometry: CompositeRingGeometry | null) => void
@@ -21,6 +22,8 @@ interface EditorState {
   setHasGemstone: (hasGemstone: boolean) => void
   setGemstoneSize: (gemstoneSize: number) => void
   setEditorMode: (mode: EditorMode) => void
+  setIsSculpting: (isSculpting: boolean) => void
+  updateRingGeometryVertices: (newVertices: number[]) => void
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -32,6 +35,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   hasGemstone: false,
   gemstoneSize: 2,
   editorMode: 'parametric',
+  isSculpting: false,
   setActiveTool: (tool) => set({ activeTool: tool }),
   setSelectedMesh: (meshId) => set({ selectedMesh: meshId }),
   setRingGeometry: (geometry) => set({ ringGeometry: geometry }),
@@ -40,4 +44,28 @@ export const useEditorStore = create<EditorState>((set) => ({
   setHasGemstone: (hasGemstone) => set({ hasGemstone }),
   setGemstoneSize: (gemstoneSize) => set({ gemstoneSize }),
   setEditorMode: (mode) => set({ editorMode: mode }),
+  setIsSculpting: (isSculpting) => set({ isSculpting }),
+  updateRingGeometryVertices: (newVertices) =>
+    set((state) => {
+      if (!state.ringGeometry) return state
+
+      const nestedVertices: number[][] = []
+      for (let i = 0; i < newVertices.length; i += 3) {
+        nestedVertices.push([
+          newVertices[i],
+          newVertices[i + 1],
+          newVertices[i + 2],
+        ])
+      }
+
+      return {
+        ringGeometry: {
+          ...state.ringGeometry,
+          ring: {
+            ...state.ringGeometry.ring,
+            vertices: nestedVertices,
+          },
+        },
+      }
+    }),
 }))

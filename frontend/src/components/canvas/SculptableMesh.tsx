@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
+import { useEditorStore } from '../../store/useEditorStore'
 import type { GeometryData } from '../../types/api-specs'
 
 const BRUSH_RADIUS = 1.0
@@ -12,6 +13,10 @@ interface SculptableMeshProps {
 
 export function SculptableMesh({ geometryData }: SculptableMeshProps) {
   const isSculptingRef = useRef(false)
+  const setIsSculpting = useEditorStore((state) => state.setIsSculpting)
+  const updateRingGeometryVertices = useEditorStore(
+    (state) => state.updateRingGeometryVertices,
+  )
 
   const geometry = useMemo(() => {
     const positions = new Float32Array(geometryData.vertices.flat())
@@ -55,6 +60,7 @@ export function SculptableMesh({ geometryData }: SculptableMeshProps) {
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation()
     isSculptingRef.current = true
+    setIsSculpting(true)
     applyBrush(event.point)
   }
 
@@ -64,9 +70,22 @@ export function SculptableMesh({ geometryData }: SculptableMeshProps) {
     applyBrush(event.point)
   }
 
+  const persistVertices = () => {
+    const positionAttr = geometry.attributes.position as THREE.BufferAttribute
+    updateRingGeometryVertices(Array.from(positionAttr.array))
+  }
+
   const handlePointerUp = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation()
     isSculptingRef.current = false
+    setIsSculpting(false)
+    persistVertices()
+  }
+
+  const handlePointerOut = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation()
+    isSculptingRef.current = false
+    setIsSculpting(false)
   }
 
   return (
@@ -75,6 +94,7 @@ export function SculptableMesh({ geometryData }: SculptableMeshProps) {
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerOut={handlePointerOut}
     >
       <meshStandardMaterial color="gold" metalness={1} roughness={0.2} />
     </mesh>
