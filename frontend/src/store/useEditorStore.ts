@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { CompositeRingGeometry } from '../types/api-specs'
+import type { CompositeRingGeometry, GeometryData } from '../types/api-specs'
 
 export type ToolId = 'select' | 'translate' | 'rotate' | 'scale'
 export type EditorMode = 'parametric' | 'sculpt'
@@ -24,6 +24,7 @@ interface EditorState {
   setEditorMode: (mode: EditorMode) => void
   setIsSculpting: (isSculpting: boolean) => void
   updateRingGeometryVertices: (newVertices: number[]) => void
+  updateRingMesh: (ring: GeometryData) => void
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -68,4 +69,11 @@ export const useEditorStore = create<EditorState>((set) => ({
         },
       }
     }),
+  updateRingMesh: (ring) =>
+    set((state) => ({
+      ringGeometry: {
+        ring,
+        gemstone: state.ringGeometry?.gemstone ?? null,
+      },
+    })),
 }))

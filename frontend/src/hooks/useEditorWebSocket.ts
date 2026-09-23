@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useEditorStore } from '../store/useEditorStore'
-import type { CompositeRingGeometry } from '../types/api-specs'
+import type {
+  BooleanOperationRequest,
+  CompositeRingGeometry,
+  GeometryData,
+} from '../types/api-specs'
 
 const WS_URL = 'ws://localhost:8000/ws/editor'
 
+type PendingRequest = 'create_ring' | 'boolean_difference'
+
 export function useEditorWebSocket() {
   const socketRef = useRef<WebSocket | null>(null)
+  // The backend answers requests in order, and both result types share the
+  // same `{ ring, gemstone }` shape, so we track what each reply belongs to.
+  const pendingRef = useRef<PendingRequest[]>([])
   const setRingGeometry = useEditorStore((state) => state.setRingGeometry)
+  const updateRingMesh = useEditorStore((state) => state.updateRingMesh)
   const [isConnected, setIsConnected] = useState(false)
 
   useEffect(() => {
@@ -14,18 +24,37 @@ export function useEditorWebSocket() {
     socketRef.current = socket
 
     socket.onopen = () => {
+      if (socketRef.current !== socket) return
+      pendingRef.current = []
       setIsConnected(true)
     }
 
     socket.onclose = () => {
+      if (socketRef.current !== socket) return
+      pendingRef.current = []
       setIsConnected(false)
     }
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data)
+      if (!data || typeof data !== 'object') return
 
-      if (data && typeof data === 'object' && 'ring' in data) {
-        setRingGeometry(data as CompositeRingGeometry)
+      const isResult = 'ring' in data
+      const isError = data.status === 'error'
+      if (!isResult && !isError) return
+
+      const request = pendingRef.current.shift()
+
+      if (isError) {
+        console.error('Editor request failed:', data)
+        return
+      }
+
+      const result = data as CompositeRingGeometry
+      if (request === 'boolean_difference') {
+        updateRingMesh(result.ring)
+      } else {
+        setRingGeometry(result)
       }
     }
 
@@ -33,7 +62,7 @@ export function useEditorWebSocket() {
       socket.close()
       socketRef.current = null
     }
-  }, [setRingGeometry])
+  }, [setRingGeometry, updateRingMesh])
 
   const requestRing = useCallback(
     (
@@ -45,6 +74,7 @@ export function useEditorWebSocket() {
       const socket = socketRef.current
       if (!socket || socket.readyState !== WebSocket.OPEN) return
 
+      pendingRef.current.push('create_ring')
       socket.send(
         JSON.stringify({
           action: 'create_ring',
@@ -58,5 +88,22 @@ export function useEditorWebSocket() {
     [],
   )
 
-  return { requestRing, isConnected }
+  const requestBooleanDifference = useCallback(
+    (targetMesh: GeometryData, toolMesh: GeometryData) => {
+      const socket = socketRef.current
+      if (!socket || socket.readyState !== WebSocket.OPEN) return
+
+      const payload: BooleanOperationRequest = {
+        action: 'boolean_difference',
+        target_mesh: targetMesh,
+        tool_mesh: toolMesh,
+      }
+
+      pendingRef.current.push('boolean_difference')
+      socket.send(JSON.stringify(payload))
+    },
+    [],
+  )
+
+  return { requestRing, requestBooleanDifference, isConnected }
 }

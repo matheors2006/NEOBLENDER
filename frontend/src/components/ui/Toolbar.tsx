@@ -1,12 +1,36 @@
 import { useEffect } from 'react'
 import { Move, RotateCw, MousePointer2, Scale } from 'lucide-react'
+import * as THREE from 'three'
 import { useEditorWebSocket } from '../../hooks/useEditorWebSocket'
 import {
   useEditorStore,
   type EditorMode,
   type ToolId,
 } from '../../store/useEditorStore'
-import type { ExportRingRequest } from '../../types/api-specs'
+import type { ExportRingRequest, GeometryData } from '../../types/api-specs'
+
+// A 2mm-diameter drill bit running along Y, centered on the top of the band
+// (y = ring radius) so it passes fully through the tube.
+function buildDrillBitData(ringRadius: number): GeometryData {
+  const geometry = new THREE.CylinderGeometry(1, 1, 20, 16)
+  geometry.translate(0, ringRadius, 0)
+
+  const positions = geometry.attributes.position.array
+  const indices = geometry.index!.array
+
+  const vertices: number[][] = []
+  for (let i = 0; i < positions.length; i += 3) {
+    vertices.push([positions[i], positions[i + 1], positions[i + 2]])
+  }
+
+  const faces: number[][] = []
+  for (let i = 0; i < indices.length; i += 3) {
+    faces.push([indices[i], indices[i + 1], indices[i + 2]])
+  }
+
+  geometry.dispose()
+  return { vertices, faces }
+}
 
 const TOOLS: { id: ToolId; label: string; icon: typeof Move }[] = [
   { id: 'select', label: 'Select', icon: MousePointer2 },
@@ -35,7 +59,14 @@ export function Toolbar() {
   const setGemstoneSize = useEditorStore((state) => state.setGemstoneSize)
   const editorMode = useEditorStore((state) => state.editorMode)
   const setEditorMode = useEditorStore((state) => state.setEditorMode)
-  const { requestRing, isConnected } = useEditorWebSocket()
+  const ringGeometry = useEditorStore((state) => state.ringGeometry)
+  const { requestRing, requestBooleanDifference, isConnected } =
+    useEditorWebSocket()
+
+  const handleDrillHole = () => {
+    if (!ringGeometry) return
+    requestBooleanDifference(ringGeometry.ring, buildDrillBitData(ringRadius))
+  }
 
   useEffect(() => {
     if (!isConnected) return
@@ -188,6 +219,20 @@ export function Toolbar() {
           </div>
         </>
       )}
+
+      <div className="h-8 w-px bg-neutral-700" />
+
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-neutral-400">Tools</span>
+        <button
+          type="button"
+          onClick={handleDrillHole}
+          disabled={!ringGeometry || !isConnected}
+          className="h-7 rounded-md bg-neutral-700 px-3 text-xs font-medium text-neutral-100 transition-colors hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Drill 2mm Hole
+        </button>
+      </div>
 
       <div className="h-8 w-px bg-neutral-700" />
 
