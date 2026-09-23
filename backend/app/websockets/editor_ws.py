@@ -7,9 +7,15 @@ from app.models.schemas import BooleanOperationSpec, RingGenerationSpec
 from app.services.geometry_service import (
     generate_base_ring,
     perform_boolean_difference,
+    perform_boolean_union,
 )
 
 router = APIRouter()
+
+BOOLEAN_OPERATIONS = {
+    "boolean_difference": perform_boolean_difference,
+    "boolean_union": perform_boolean_union,
+}
 
 
 @router.websocket("/ws/editor")
@@ -36,7 +42,7 @@ async def editor_websocket(websocket: WebSocket):
                     gemstone_size=spec.gemstone_size,
                 )
                 await websocket.send_json(mesh_data)
-            elif action == "boolean_difference":
+            elif action in BOOLEAN_OPERATIONS:
                 try:
                     boolean_spec = BooleanOperationSpec(**payload)
                 except ValidationError as exc:
@@ -46,7 +52,7 @@ async def editor_websocket(websocket: WebSocket):
                     continue
 
                 try:
-                    altered_ring = perform_boolean_difference(
+                    altered_ring = BOOLEAN_OPERATIONS[boolean_spec.action](
                         target_data=boolean_spec.target_mesh.model_dump(),
                         tool_data=boolean_spec.tool_mesh.model_dump(),
                     )

@@ -9,7 +9,7 @@ export interface GeometryData {
 }
 
 export interface BooleanOperationRequest {
-  action: 'boolean_difference'
+  action: 'boolean_difference' | 'boolean_union'
   target_mesh: GeometryData
   tool_mesh: GeometryData
 }

@@ -29,7 +29,7 @@ export function ToolGizmoMesh() {
     <TransformControls mode="translate" onObjectChange={handleObjectChange}>
       <mesh ref={meshRef} geometry={geometry}>
         <meshStandardMaterial
-          color="#ef4444"
+          color={type === 'sphere' ? '#facc15' : '#ef4444'}
           transparent
           opacity={0.5}
           depthWrite={false}

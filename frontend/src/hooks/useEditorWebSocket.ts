@@ -8,7 +8,7 @@ import type {
 
 const WS_URL = 'ws://localhost:8000/ws/editor'
 
-type PendingRequest = 'create_ring' | 'boolean_difference'
+type PendingRequest = 'create_ring' | 'boolean'
 
 export function useEditorWebSocket() {
   const socketRef = useRef<WebSocket | null>(null)
@@ -51,7 +51,7 @@ export function useEditorWebSocket() {
       }
 
       const result = data as CompositeRingGeometry
-      if (request === 'boolean_difference') {
+      if (request === 'boolean') {
         updateRingMesh(result.ring)
       } else {
         setRingGeometry(result)
@@ -88,22 +88,43 @@ export function useEditorWebSocket() {
     [],
   )
 
-  const requestBooleanDifference = useCallback(
-    (targetMesh: GeometryData, toolMesh: GeometryData) => {
+  const requestBoolean = useCallback(
+    (
+      action: BooleanOperationRequest['action'],
+      targetMesh: GeometryData,
+      toolMesh: GeometryData,
+    ) => {
       const socket = socketRef.current
       if (!socket || socket.readyState !== WebSocket.OPEN) return
 
       const payload: BooleanOperationRequest = {
-        action: 'boolean_difference',
+        action,
         target_mesh: targetMesh,
         tool_mesh: toolMesh,
       }
 
-      pendingRef.current.push('boolean_difference')
+      pendingRef.current.push('boolean')
       socket.send(JSON.stringify(payload))
     },
     [],
   )
 
-  return { requestRing, requestBooleanDifference, isConnected }
+  const requestBooleanDifference = useCallback(
+    (targetMesh: GeometryData, toolMesh: GeometryData) =>
+      requestBoolean('boolean_difference', targetMesh, toolMesh),
+    [requestBoolean],
+  )
+
+  const requestBooleanUnion = useCallback(
+    (targetMesh: GeometryData, toolMesh: GeometryData) =>
+      requestBoolean('boolean_union', targetMesh, toolMesh),
+    [requestBoolean],
+  )
+
+  return {
+    requestRing,
+    requestBooleanDifference,
+    requestBooleanUnion,
+    isConnected,
+  }
 }

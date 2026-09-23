@@ -7,7 +7,7 @@ import {
   type EditorMode,
   type ToolId,
 } from '../../store/useEditorStore'
-import type { ExportRingRequest } from '../../types/api-specs'
+import type { ExportRingRequest, GeometryData } from '../../types/api-specs'
 import { createToolGeometry, geometryToData } from '../../utils/toolGeometry'
 
 const IDENTITY_MATRIX = new THREE.Matrix4().identity().toArray()
@@ -42,14 +42,24 @@ export function Toolbar() {
   const ringGeometry = useEditorStore((state) => state.ringGeometry)
   const toolGizmo = useEditorStore((state) => state.toolGizmo)
   const setToolGizmo = useEditorStore((state) => state.setToolGizmo)
-  const { requestRing, requestBooleanDifference, isConnected } =
-    useEditorWebSocket()
+  const {
+    requestRing,
+    requestBooleanDifference,
+    requestBooleanUnion,
+    isConnected,
+  } = useEditorWebSocket()
 
   const handleSpawnDrillBit = () => {
     setToolGizmo({ type: 'cylinder', matrix: IDENTITY_MATRIX })
   }
 
-  const handleExecuteCut = () => {
+  const handleSpawnGoldSphere = () => {
+    setToolGizmo({ type: 'sphere', matrix: IDENTITY_MATRIX })
+  }
+
+  const executeBoolean = (
+    request: (target: GeometryData, tool: GeometryData) => void,
+  ) => {
     if (!ringGeometry || !toolGizmo) return
 
     const geometry = createToolGeometry(toolGizmo.type)
@@ -57,9 +67,12 @@ export function Toolbar() {
     const toolData = geometryToData(geometry)
     geometry.dispose()
 
-    requestBooleanDifference(ringGeometry.ring, toolData)
+    request(ringGeometry.ring, toolData)
     setToolGizmo(null)
   }
+
+  const handleExecuteCut = () => executeBoolean(requestBooleanDifference)
+  const handleExecuteJoin = () => executeBoolean(requestBooleanUnion)
 
   useEffect(() => {
     if (!isConnected) return
@@ -217,7 +230,7 @@ export function Toolbar() {
 
       <div className="flex flex-col gap-1">
         <span className="text-xs text-neutral-400">Tools</span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={handleSpawnDrillBit}
@@ -228,11 +241,27 @@ export function Toolbar() {
           </button>
           <button
             type="button"
+            onClick={handleSpawnGoldSphere}
+            disabled={!ringGeometry || toolGizmo !== null}
+            className="h-7 rounded-md bg-neutral-700 px-3 text-xs font-medium text-neutral-100 transition-colors hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Spawn Gold Sphere
+          </button>
+          <button
+            type="button"
             onClick={handleExecuteCut}
             disabled={!ringGeometry || !toolGizmo || !isConnected}
             className="h-7 rounded-md bg-red-500 px-3 text-xs font-medium text-white transition-colors hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Execute Cut (Difference)
+          </button>
+          <button
+            type="button"
+            onClick={handleExecuteJoin}
+            disabled={!ringGeometry || !toolGizmo || !isConnected}
+            className="h-7 rounded-md bg-amber-500 px-3 text-xs font-medium text-neutral-950 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Execute Join (Union)
           </button>
         </div>
       </div>

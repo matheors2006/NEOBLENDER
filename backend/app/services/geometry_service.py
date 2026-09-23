@@ -36,14 +36,25 @@ def generate_base_ring(
     }
 
 
-def perform_boolean_difference(target_data: dict, tool_data: dict) -> dict:
+def _load_boolean_operands(
+    target_data: dict, tool_data: dict
+) -> tuple[trimesh.Trimesh, trimesh.Trimesh]:
     target_mesh = trimesh.Trimesh(
         vertices=target_data["vertices"], faces=target_data["faces"]
     )
     tool_mesh = trimesh.Trimesh(
         vertices=tool_data["vertices"], faces=tool_data["faces"]
     )
+    return target_mesh, tool_mesh
 
+
+def perform_boolean_difference(target_data: dict, tool_data: dict) -> dict:
+    target_mesh, tool_mesh = _load_boolean_operands(target_data, tool_data)
     result_mesh = target_mesh.difference(tool_mesh, engine="manifold")
+    return _mesh_to_dict(result_mesh)
 
+
+def perform_boolean_union(target_data: dict, tool_data: dict) -> dict:
+    target_mesh, tool_mesh = _load_boolean_operands(target_data, tool_data)
+    result_mesh = target_mesh.union(tool_mesh, engine="manifold")
     return _mesh_to_dict(result_mesh)
